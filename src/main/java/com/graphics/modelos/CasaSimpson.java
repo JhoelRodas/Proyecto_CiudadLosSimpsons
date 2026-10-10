@@ -5,6 +5,8 @@ public class CasaSimpson {
     public float posX;
     public float posZ;
     public float angulo; // En radianes (0 por defecto, usa Math.PI/2 para girar 90 grados)
+    public float escala = 0.65f;
+
 
     public CasaSimpson(float posX, float posZ, float angulo) {
         this.posX = posX;
@@ -173,6 +175,8 @@ public class CasaSimpson {
      */
     private void dibujarPiezaInclinada(Renderer renderer, float xLocal, float yLocal, float zLocal,
             float sx, float sy, float sz, float[] rgb, float anguloX, float anguloZ) {
+        xLocal *= escala; yLocal *= escala; zLocal *= escala;
+        sx *= escala; sy *= escala; sz *= escala;
         float coseno = (float) Math.cos(angulo);
         float seno = (float) Math.sin(angulo);
 

@@ -1,5 +1,7 @@
 package com.graphics.modelos;
+
 import com.graphics.Renderer;
+
 public class Alumbrado {
     public float posX;
     public float posZ;
@@ -41,13 +43,17 @@ public class Alumbrado {
         // Cabeza de la lámpara
         dibujarPieza(renderer, 1.2f, 4.5f, 0, 0.9f, 0.14f, 0.5f, colorCabeza, 0);
         dibujarPieza(renderer, 1.2f, 4.6f, 0, 0.6f, 0.1f, 0.35f, colorCabeza, 0);
+        if (encendida) renderer.entero("uEmision", 1);
         dibujarPieza(renderer, 1.2f, 4.38f, 0, 0.7f, 0.1f, 0.38f, colorLuz, 0);
         dibujarPieza(renderer, 1.2f, 4.28f, 0, 0.4f, 0.08f, 0.22f, colorLuz, 0);
+        if (encendida) renderer.entero("uEmision", 0);
 
         // Segundo farol pequeño del lado opuesto, estilo clásico de doble farol
         dibujarPieza(renderer, -0.2f, 4.5f, 0, 0.4f, 0.16f, 0.16f, colorPoste, 0);
         dibujarPieza(renderer, -0.5f, 4.35f, 0, 0.35f, 0.4f, 0.35f, colorCabeza, 0);
+        if (encendida) renderer.entero("uEmision", 1);
         dibujarPieza(renderer, -0.5f, 4.3f, 0, 0.26f, 0.3f, 0.26f, colorLuz, 0);
+        if (encendida) renderer.entero("uEmision", 0);
     }
 
     private void dibujarPieza(Renderer renderer, float xLocal, float yLocal, float zLocal,
@@ -58,6 +64,7 @@ public class Alumbrado {
         float lz = zLocal * escala;
         float mundoX = posX + (coseno * lx) + (seno * lz);
         float mundoZ = posZ - (seno * lx) + (coseno * lz);
-        renderer.cajaInclinada(mundoX, yLocal * escala, mundoZ, sx * escala, sy * escala, sz * escala, rgb[0], rgb[1], rgb[2], angulo + giro, 0, 0);
+        renderer.cajaInclinada(mundoX, yLocal * escala, mundoZ, sx * escala, sy * escala, sz * escala, rgb[0], rgb[1],
+                rgb[2], angulo + giro, 0, 0);
     }
 }

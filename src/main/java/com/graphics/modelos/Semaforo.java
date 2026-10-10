@@ -4,6 +4,7 @@ public class Semaforo {
     public float posX;
     public float posZ;
     public float angulo;
+    public float escala = 1.0f;
     public int estado = 2; // 0 = Rojo, 1 = Amarillo, 2 = Verde
 
     public Semaforo(float posX, float posZ, float angulo) {
@@ -61,8 +62,10 @@ public class Semaforo {
             float sx, float sy, float sz, float[] rgb, float giro) {
         float coseno = (float) Math.cos(angulo);
         float seno = (float) Math.sin(angulo);
-        float mundoX = posX + (coseno * xLocal) + (seno * zLocal);
-        float mundoZ = posZ - (seno * xLocal) + (coseno * zLocal);
-        renderer.cajaInclinada(mundoX, yLocal, mundoZ, sx, sy, sz, rgb[0], rgb[1], rgb[2], angulo + giro, 0, 0);
+        float lx = xLocal * escala;
+        float lz = zLocal * escala;
+        float mundoX = posX + (coseno * lx) + (seno * lz);
+        float mundoZ = posZ - (seno * lx) + (coseno * lz);
+        renderer.cajaInclinada(mundoX, yLocal * escala, mundoZ, sx * escala, sy * escala, sz * escala, rgb[0], rgb[1], rgb[2], angulo + giro, 0, 0);
     }
 }

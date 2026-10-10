@@ -7,6 +7,7 @@ public class CasaFlanders {
     public float posX;
     public float posZ;
     public float angulo;
+    public float escala = 0.65f;
 
     public CasaFlanders(float posX, float posZ, float angulo) {
         this.posX = posX;
@@ -113,6 +114,8 @@ public class CasaFlanders {
 
     private void dibujarPiezaInclinada(Renderer renderer, float xLocal, float yLocal, float zLocal,
             float sx, float sy, float sz, float[] rgb, float anguloX, float anguloZ) {
+        xLocal *= escala; yLocal *= escala; zLocal *= escala;
+        sx *= escala; sy *= escala; sz *= escala;
         float coseno = (float) Math.cos(angulo);
         float seno = (float) Math.sin(angulo);
 

@@ -30,8 +30,14 @@ public class Lote {
     public float angulo;
     public float escala = 1.0f;
 
-    public float ancho; // en X
-    public float fondo; // en Z
+    public float ancho; // en X (medida de diseño)
+    public float fondo; // en Z (medida de diseño)
+
+    // Tamaño REAL del terreno en el mundo (0 = usar ancho*escala / fondo*escala).
+    // Con ajustarATerreno() el patio se estira para llenar la celda SIN agrandar casa, árboles ni cercas:
+    // "escala" controla el tamaño de los objetos y el terreno controla cuánto pasto hay.
+    public float anchoReal = 0;
+    public float fondoReal = 0;
 
     public int cercaFrente = SIN_CERCA;
     public int cercaLados = SIN_CERCA;
@@ -90,6 +96,16 @@ public class Lote {
         terrazas.add(new float[] { x, z, anchoT, fondoT });
         return this;
     }
+
+    /** Hace que el terreno mida exactamente anchoMundo x fondoMundo, sin cambiar el tamaño de los objetos. */
+    public Lote ajustarATerreno(float anchoMundo, float fondoMundo) {
+        this.anchoReal = anchoMundo;
+        this.fondoReal = fondoMundo;
+        return this;
+    }
+
+    private float fx() { return anchoReal > 0 ? anchoReal / ancho : escala; }
+    private float fz() { return fondoReal > 0 ? fondoReal / fondo : escala; }
 
     // ------------------------------------------------------------ Posición de la casa
     /** Posición mundial {x, z} donde hay que poner la casa (usa lote.angulo como su ángulo). */
@@ -176,46 +192,54 @@ public class Lote {
         float[] juntas = { 0.62f, 0.60f, 0.56f };
         float[] aceraCol = { 0.76f, 0.75f, 0.72f };
 
-        float hx = ancho / 2, hz = fondo / 2;
+        float e = escala;
+        float W = ancho * fx();          // ancho real del terreno
+        float F = fondo * fz();          // fondo real del terreno
+        float hx = W / 2, hz = F / 2;
 
         // Pasto con franjas de corte
-        pieza(r, 0, 0.05f, 0, ancho, 0.1f, fondo, pasto, 0);
-        for (float z = -hz + 0.6f; z < hz; z += 2.4f) {
-            float len = Math.min(1.2f, hz - (z - 0.6f));
-            pieza(r, 0, 0.105f, z - 0.6f + len / 2, ancho, 0.01f, len, pastoOsc, 0);
+        w(r, 0, 0.05f * e, 0, W, 0.1f * e, F, pasto, 0);
+        for (float z = -hz + 0.6f * e; z < hz; z += 2.4f * e) {
+            float len = Math.min(1.2f * e, hz - (z - 0.6f * e));
+            w(r, 0, 0.105f * e, z - 0.6f * e + len / 2, W, 0.01f * e, len, pastoOsc, 0);
         }
 
-        // Acera frente al lote
+        // Acera frente al lote (si la calle ya trae su propia acera, desactívala con acera = false)
         if (acera) {
-            pieza(r, 0, 0.06f, hz + 0.5f, ancho, 0.12f, 1.0f, aceraCol, 0);
-            pieza(r, 0, 0.13f, hz + 1.02f, ancho, 0.16f, 0.1f, juntas, 0); // cordón
-            for (float x = -hx + 2; x < hx; x += 2) {
-                pieza(r, x, 0.125f, hz + 0.5f, 0.05f, 0.01f, 1.0f, juntas, 0);
+            w(r, 0, 0.06f * e, hz + 0.5f * e, W, 0.12f * e, 1.0f * e, aceraCol, 0);
+            w(r, 0, 0.13f * e, hz + 1.02f * e, W, 0.16f * e, 0.1f * e, juntas, 0);
+            for (float x = -hx + 2 * e; x < hx; x += 2 * e) {
+                w(r, x, 0.125f * e, hz + 0.5f * e, 0.05f * e, 0.01f * e, 1.0f * e, juntas, 0);
             }
         }
 
-        // Camino a la puerta
+        // Camino a la puerta (posición relativa a la casa, para que siempre toque la puerta)
+        float camX = casaRelX(caminoX);
+        float camZ0 = casaRelZ(caminoZInicio);
+        float camAncho = caminoAncho * e;
         if (hayCamino) {
-            float largo = hz - caminoZInicio;
+            float largo = hz - camZ0;
             if (largo > 0) {
-                pieza(r, caminoX, 0.13f, caminoZInicio + largo / 2, caminoAncho, 0.06f, largo, cemento, 0);
-                for (float z = caminoZInicio + 1; z < hz; z += 1.0f) {
-                    pieza(r, caminoX, 0.165f, z, caminoAncho, 0.01f, 0.05f, juntas, 0);
+                w(r, camX, 0.13f * e, camZ0 + largo / 2, camAncho, 0.06f * e, largo, cemento, 0);
+                for (float z = camZ0 + e; z < hz; z += e) {
+                    w(r, camX, 0.165f * e, z, camAncho, 0.01f * e, 0.05f * e, juntas, 0);
                 }
             }
         }
 
         // Cochera
+        float cocX = casaRelX(cocheraX);
+        float cocZ0 = casaRelZ(cocheraZInicio);
+        float cocAncho = cocheraAncho * e;
         if (hayCochera) {
-            float largo = hz - cocheraZInicio;
+            float largo = hz - cocZ0;
             if (largo > 0) {
-                pieza(r, cocheraX, 0.13f, cocheraZInicio + largo / 2, cocheraAncho, 0.06f, largo, cemento, 0);
-                for (float z = cocheraZInicio + 1.2f; z < hz; z += 1.2f) {
-                    pieza(r, cocheraX, 0.165f, z, cocheraAncho, 0.01f, 0.05f, juntas, 0);
+                w(r, cocX, 0.13f * e, cocZ0 + largo / 2, cocAncho, 0.06f * e, largo, cemento, 0);
+                for (float z = cocZ0 + 1.2f * e; z < hz; z += 1.2f * e) {
+                    w(r, cocX, 0.165f * e, z, cocAncho, 0.01f * e, 0.05f * e, juntas, 0);
                 }
-                // Rampa de acceso en la acera
                 if (acera) {
-                    pieza(r, cocheraX, 0.14f, hz + 0.5f, cocheraAncho + 0.4f, 0.1f, 1.0f, cemento, 0);
+                    w(r, cocX, 0.14f * e, hz + 0.5f * e, cocAncho + 0.4f * e, 0.1f * e, 1.0f * e, cemento, 0);
                 }
             }
         }
@@ -235,12 +259,12 @@ public class Lote {
             dibujarFlores(r, f[0], f[1], f[2], f[3]);
         }
 
-        // Cercas
-        dibujarCercas(r);
+        // Cercas (en unidades de mundo)
+        dibujarCercas(r, hx, hz, camX, camAncho, cocX, cocAncho);
 
-        // Buzón
+        // Buzón junto al borde del frente
         if (buzon) {
-            dibujarBuzon(r, buzonX, hz - 0.6f);
+            dibujarBuzon(r, buzonX * fx(), hz - 0.6f * e);
         }
 
         // Árboles
@@ -252,6 +276,15 @@ public class Lote {
             a.arbol.escala = a.esc * escala;
             a.arbol.dibujar(r);
         }
+    }
+
+    /** x de un elemento anclado a la casa (puerta, garaje): la casa se coloca con fx, su contenido con escala. */
+    private float casaRelX(float xNominal) {
+        return casaX * fx() + (xNominal - casaX) * escala;
+    }
+
+    private float casaRelZ(float zNominal) {
+        return casaZ * fz() + (zNominal - casaZ) * escala;
     }
 
     private void dibujarFlores(Renderer r, float x, float z, float w, float d) {
@@ -270,30 +303,31 @@ public class Lote {
         }
     }
 
+    /** x, z en unidades de mundo (relativas al centro del lote). */
     private void dibujarBuzon(Renderer r, float x, float z) {
+        float e = escala;
         float[] poste = { 0.40f, 0.28f, 0.18f };
         float[] caja = { 0.15f, 0.25f, 0.65f };
         float[] bandera = { 0.9f, 0.15f, 0.15f };
-        pieza(r, x, 0.65f, z, 0.1f, 1.1f, 0.1f, poste, 0);
-        pieza(r, x, 1.3f, z, 0.35f, 0.3f, 0.6f, caja, 0);
-        pieza(r, x, 1.5f, z, 0.3f, 0.1f, 0.5f, caja, 0);
-        pieza(r, x + 0.2f, 1.45f, z + 0.1f, 0.05f, 0.3f, 0.05f, bandera, 0);
-        pieza(r, x + 0.2f, 1.6f, z + 0.1f, 0.05f, 0.1f, 0.2f, bandera, 0);
+        w(r, x, 0.65f * e, z, 0.1f * e, 1.1f * e, 0.1f * e, poste, 0);
+        w(r, x, 1.3f * e, z, 0.35f * e, 0.3f * e, 0.6f * e, caja, 0);
+        w(r, x, 1.5f * e, z, 0.3f * e, 0.1f * e, 0.5f * e, caja, 0);
+        w(r, x + 0.2f * e, 1.45f * e, z + 0.1f * e, 0.05f * e, 0.3f * e, 0.05f * e, bandera, 0);
+        w(r, x + 0.2f * e, 1.6f * e, z + 0.1f * e, 0.05f * e, 0.1f * e, 0.2f * e, bandera, 0);
     }
 
-    private void dibujarCercas(Renderer r) {
-        float hx = ancho / 2, hz = fondo / 2;
-        // Fondo y laterales
+    private void dibujarCercas(Renderer r, float hx, float hz, float camX, float camAncho,
+            float cocX, float cocAncho) {
+        float e = escala;
         if (cercaLados != SIN_CERCA) {
-            cerca(r, cercaLados, -hx, hx, -hz, -hz);        // fondo
-            cerca(r, cercaLados, -hx, -hx, -hz, hz);        // lateral izquierdo
-            cerca(r, cercaLados, hx, hx, -hz, hz);          // lateral derecho
+            cerca(r, cercaLados, -hx, hx, -hz, -hz);
+            cerca(r, cercaLados, -hx, -hx, -hz, hz);
+            cerca(r, cercaLados, hx, hx, -hz, hz);
         }
-        // Frente, con aberturas para camino y cochera
         if (cercaFrente != SIN_CERCA) {
             List<float[]> huecos = new ArrayList<>();
-            if (hayCamino) huecos.add(new float[] { caminoX - caminoAncho / 2 - 0.2f, caminoX + caminoAncho / 2 + 0.2f });
-            if (hayCochera) huecos.add(new float[] { cocheraX - cocheraAncho / 2 - 0.2f, cocheraX + cocheraAncho / 2 + 0.2f });
+            if (hayCamino) huecos.add(new float[] { camX - camAncho / 2 - 0.2f * e, camX + camAncho / 2 + 0.2f * e });
+            if (hayCochera) huecos.add(new float[] { cocX - cocAncho / 2 - 0.2f * e, cocX + cocAncho / 2 + 0.2f * e });
             huecos.sort((a, b) -> Float.compare(a[0], b[0]));
             float cursor = -hx;
             for (float[] h : huecos) {
@@ -304,11 +338,13 @@ public class Lote {
         }
     }
 
-    /** Segmento de cerca alineado a un eje. */
+    /** Segmento de cerca alineado a un eje. Todo en unidades de mundo: los postes miden lo mismo
+     *  aunque el terreno sea más grande (solo se añaden más postes). */
     private void cerca(Renderer r, int tipo, float x1, float x2, float z1, float z2) {
+        float e = escala;
         boolean sobreX = Math.abs(x2 - x1) >= Math.abs(z2 - z1);
         float largo = sobreX ? Math.abs(x2 - x1) : Math.abs(z2 - z1);
-        if (largo < 0.1f) return;
+        if (largo < 0.1f * e) return;
         float cx = (x1 + x2) / 2, cz = (z1 + z2) / 2;
 
         float[] blanco = { 0.95f, 0.95f, 0.93f };
@@ -317,54 +353,63 @@ public class Lote {
         float[] hierro = { 0.08f, 0.08f, 0.10f };
 
         if (tipo == CERCA_MADERA) {
-            // Paneles verticales alternados, con riel superior
-            int n = Math.max(1, (int) (largo / 1.0f));
+            int n = Math.max(1, (int) (largo / (1.0f * e)));
             float paso = largo / n;
             for (int i = 0; i < n; i++) {
                 float px = sobreX ? Math.min(x1, x2) + paso * (i + 0.5f) : cx;
                 float pz = sobreX ? cz : Math.min(z1, z2) + paso * (i + 0.5f);
                 float[] c = (i % 2 == 0) ? madera : maderaOsc;
-                pieza(r, px, 0.95f, pz, sobreX ? paso : 0.14f, 1.7f, sobreX ? 0.14f : paso, c, 0);
-                pieza(r, px, 1.85f, pz, sobreX ? paso : 0.2f, 0.08f, sobreX ? 0.2f : paso, maderaOsc, 0);
+                w(r, px, 0.95f * e, pz, sobreX ? paso : 0.14f * e, 1.7f * e, sobreX ? 0.14f * e : paso, c, 0);
+                w(r, px, 1.85f * e, pz, sobreX ? paso : 0.2f * e, 0.08f * e, sobreX ? 0.2f * e : paso, maderaOsc, 0);
             }
             return;
         }
 
-        float alto = (tipo == CERCA_HIERRO) ? 1.8f : 0.8f;
-        float sep = (tipo == CERCA_HIERRO) ? 0.5f : 0.4f;
+        float alto = ((tipo == CERCA_HIERRO) ? 1.8f : 0.8f) * e;
+        float sep = ((tipo == CERCA_HIERRO) ? 0.5f : 0.4f) * e;
         float[] col = (tipo == CERCA_HIERRO) ? hierro : blanco;
-        float grosor = (tipo == CERCA_HIERRO) ? 0.1f : 0.12f;
+        float grosor = ((tipo == CERCA_HIERRO) ? 0.1f : 0.12f) * e;
 
-        // Rieles
         if (sobreX) {
-            pieza(r, cx, alto * 0.3f + 0.1f, cz, largo, 0.08f, 0.06f, col, 0);
-            pieza(r, cx, alto * 0.8f, cz, largo, 0.08f, 0.06f, col, 0);
+            w(r, cx, alto * 0.3f + 0.1f * e, cz, largo, 0.08f * e, 0.06f * e, col, 0);
+            w(r, cx, alto * 0.8f, cz, largo, 0.08f * e, 0.06f * e, col, 0);
         } else {
-            pieza(r, cx, alto * 0.3f + 0.1f, cz, 0.06f, 0.08f, largo, col, 0);
-            pieza(r, cx, alto * 0.8f, cz, 0.06f, 0.08f, largo, col, 0);
+            w(r, cx, alto * 0.3f + 0.1f * e, cz, 0.06f * e, 0.08f * e, largo, col, 0);
+            w(r, cx, alto * 0.8f, cz, 0.06f * e, 0.08f * e, largo, col, 0);
         }
         int n = Math.max(1, (int) (largo / sep));
         for (int i = 0; i <= n; i++) {
             float t = (float) i / n;
             float px = sobreX ? x1 + (x2 - x1) * t : cx;
             float pz = sobreX ? cz : z1 + (z2 - z1) * t;
-            pieza(r, px, alto / 2 + 0.1f, pz, grosor, alto, grosor, col, 0);
-            pieza(r, px, alto + 0.17f, pz, grosor + 0.04f, 0.14f, grosor + 0.04f, col, 0);
+            w(r, px, alto / 2 + 0.1f * e, pz, grosor, alto, grosor, col, 0);
+            w(r, px, alto + 0.17f * e, pz, grosor + 0.04f * e, 0.14f * e, grosor + 0.04f * e, col, 0);
         }
     }
 
     // ------------------------------------------------------------ Transformación a mundo
+    /** Posición de diseño del lote -> mundo (la posición se estira con el terreno). */
     private float[] aMundo(float lx, float lz) {
-        float c = (float) Math.cos(angulo), s = (float) Math.sin(angulo);
-        lx *= escala;
-        lz *= escala;
-        return new float[] { posX + c * lx + s * lz, posZ - s * lx + c * lz };
+        return rotar(lx * fx(), lz * fz());
     }
 
+    /** Desplazamiento ya en unidades de mundo -> posición mundial rotada por el ángulo del lote. */
+    private float[] rotar(float ox, float oz) {
+        float c = (float) Math.cos(angulo), s = (float) Math.sin(angulo);
+        return new float[] { posX + c * ox + s * oz, posZ - s * ox + c * oz };
+    }
+
+    /** Pieza en coordenadas de DISEÑO: la posición se estira con el terreno, el tamaño usa "escala". */
     private void pieza(Renderer r, float x, float y, float z, float sx, float sy, float sz,
             float[] col, float giro) {
-        float[] m = aMundo(x, z);
-        r.cajaInclinada(m[0], y * escala, m[1], sx * escala, sy * escala, sz * escala,
-                col[0], col[1], col[2], angulo + giro, 0, 0);
+        float e = escala;
+        w(r, x * fx(), y * e, z * fz(), sx * e, sy * e, sz * e, col, giro);
+    }
+
+    /** Pieza con todo ya en unidades de mundo (offset desde el centro del lote). */
+    private void w(Renderer r, float ox, float y, float oz, float sx, float sy, float sz,
+            float[] col, float giro) {
+        float[] m = rotar(ox, oz);
+        r.cajaInclinada(m[0], y, m[1], sx, sy, sz, col[0], col[1], col[2], angulo + giro, 0, 0);
     }
 }
