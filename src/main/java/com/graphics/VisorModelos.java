@@ -58,6 +58,8 @@ public class VisorModelos {
         }
 
         Auto auto = new Auto();
+        auto.posX = 0f;
+        auto.posZ = 0f;
         registrar("Auto", 14f, (r, ang) -> {
             auto.angulo = ang;
             auto.dibujar(r);

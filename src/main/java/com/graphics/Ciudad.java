@@ -101,6 +101,7 @@ public class Ciudad {
     public void enviarLuces(Renderer r, float autoX, float autoZ) {
         if (!farolasCalculadas) {
             calcularFarolas();
+            registrarFarolasPlaza();
             farolasCalculadas = true;
         }
 
@@ -176,6 +177,33 @@ public class Ciudad {
                         if (!cN && x % 2 == 0) registrarFarola(px, pz - mitad + A / 2, (float) (-Math.PI / 2));
                         if (!cS && x % 2 == 1) registrarFarola(px, pz + mitad - A / 2, (float) (Math.PI / 2));
                     }
+                }
+            }
+        }
+    }
+
+    /** Los 4 faroles de la plaza (los dibuja Plaza.java) también deben mandar luz al shader. */
+    private void registrarFarolasPlaza() {
+        int filas = mapa.length;
+        int cols = mapa[0].length;
+        int offsetX = (cols * TAMANO_CELDA) / 2;
+        int offsetZ = (filas * TAMANO_CELDA) / 2;
+        float e = plaza.escala;
+        float[][] pf = { { -1.9f, -1.9f }, { 1.9f, -1.9f }, { 1.9f, 1.9f }, { -1.9f, 1.9f } }; // igual que en Plaza.java
+        for (int z = 0; z < filas; z++) {
+            for (int x = 0; x < cols; x++) {
+                if (mapa[z][x] != 8) continue;
+                float cx = (x * TAMANO_CELDA) - offsetX + TAMANO_CELDA / 2f;
+                float cz = (z * TAMANO_CELDA) - offsetZ + TAMANO_CELDA / 2f;
+                for (float[] p : pf) {
+                    if (totalFarolas * 3 >= posicionesFarolas.length) return;
+                    float ang = (float) Math.atan2(p[1], -p[0]); // el brazo apunta al centro de la plaza
+                    float alcance = 1.2f * e;
+                    posicionesFarolas[totalFarolas * 3] = cx + p[0] * e + (float) Math.cos(ang) * alcance;
+                    // Los faroles de la plaza son muy altos; la luz se coloca más baja para que sí llegue al suelo
+                    posicionesFarolas[totalFarolas * 3 + 1] = 4.28f * e * 0.6f;
+                    posicionesFarolas[totalFarolas * 3 + 2] = cz + p[1] * e - (float) Math.sin(ang) * alcance;
+                    totalFarolas++;
                 }
             }
         }

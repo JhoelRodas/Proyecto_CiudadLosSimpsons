@@ -177,7 +177,7 @@ public class Auto {
         dibujarPieza(renderer, -1.12f, 0.88f, 0.80f, 0.04f, 0.12f, 0.18f, colorVidrio);
     }
 
-    private void dibujarPieza(Renderer renderer, float xLocal, float yLocal, float zLocal,
+    protected void dibujarPieza(Renderer renderer, float xLocal, float yLocal, float zLocal,
             float sx, float sy, float sz, float[] rgb) {
         float coseno = (float) Math.cos(angulo);
         float seno = (float) Math.sin(angulo);
@@ -191,7 +191,7 @@ public class Auto {
     /**
      * Traduce las coordenadas locales de la rueda circular a la posición global rotada
      */
-    private void dibujarRueda(Renderer renderer, float xLocal, float yLocal, float zLocal,
+    protected void dibujarRueda(Renderer renderer, float xLocal, float yLocal, float zLocal,
             float sx, float sy, float sz, float[] rgb, boolean esDelantera) {
         
         float anguloTotal = angulo;
