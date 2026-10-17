@@ -10,6 +10,7 @@ public class Auto {
     public float velocidad = 0;
     public float anguloVolante = 0; // Para animación visual de ruedas
     public boolean farosOn = false; // Los faros delanteros brillan cuando están encendidos
+    public float offsetY = 0; // Para animación de salto/rebote de suspensión o transformación
 
     public void dibujar(Renderer renderer) {
         // --- PALETA DE COLORES REFINADA (HIT & RUN) ---
@@ -185,7 +186,7 @@ public class Auto {
         float mundoX = posX + (coseno * xLocal) + (seno * zLocal);
         float mundoZ = posZ - (seno * xLocal) + (coseno * zLocal);
 
-        renderer.cajaGirada(mundoX, yLocal, mundoZ, sx, sy, sz, rgb[0], rgb[1], rgb[2], angulo);
+        renderer.cajaGirada(mundoX, yLocal + offsetY, mundoZ, sx, sy, sz, rgb[0], rgb[1], rgb[2], angulo);
     }
 
     /**
@@ -206,7 +207,7 @@ public class Auto {
         float mundoZ = posZ - (seno * xLocal) + (coseno * zLocal);
 
         // Invocamos el renderizado del cilindro girado
-        renderer.cilindroGirado(mundoX, yLocal, mundoZ, sx, sy, sz, rgb, anguloTotal);
+        renderer.cilindroGirado(mundoX, yLocal + offsetY, mundoZ, sx, sy, sz, rgb, anguloTotal);
     }
 
     public void actualizarFisicas(float deltaTime, boolean acelerar, boolean frenar, boolean izq, boolean der) {

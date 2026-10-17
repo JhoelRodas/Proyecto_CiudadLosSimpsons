@@ -68,6 +68,11 @@ public class App {
     private boolean nPresionada = false;
     private boolean farosEncendidos = true; // F alterna
     private boolean fPresionada = false;
+
+    // Control de Cambio de Vehículo (C alterna)
+    private boolean cPresionada = false;
+    private float tiempoEfectoAuto = 0f;
+    private static final float DURACION_EFECTO_AUTO = 0.40f;
     
     // Misiones de entrega
     private final Misiones misiones = new Misiones();
@@ -111,6 +116,12 @@ public class App {
             if (fActual && !fPresionada)
                 farosEncendidos = !farosEncendidos;
             fPresionada = fActual;
+
+            // --- TECLA C (CAMBIAR AUTO) ---
+            boolean cActual = glfwGetKey(ventana, org.lwjgl.glfw.GLFW.GLFW_KEY_C) == GLFW_PRESS;
+            if (cActual && !cPresionada)
+                cambiarAuto();
+            cPresionada = cActual;
             // 2. Leer estado del teclado de conducción
             boolean acelerar = glfwGetKey(ventana, GLFW_KEY_UP) == GLFW_PRESS
                     || glfwGetKey(ventana, GLFW_KEY_W) == GLFW_PRESS;
@@ -134,6 +145,16 @@ public class App {
             // 3. Mover el auto
             auto.actualizarFisicas(deltaTime, acelerar, frenar, izq, der);
             ciudad.resolverColisiones(auto);
+            
+            // Animación del efecto visual al cambiar de vehículo (salto y amortiguación)
+            if (tiempoEfectoAuto > 0) {
+                tiempoEfectoAuto -= deltaTime;
+                if (tiempoEfectoAuto < 0) tiempoEfectoAuto = 0;
+                float progreso = 1.0f - (tiempoEfectoAuto / DURACION_EFECTO_AUTO); // 0.0 -> 1.0
+                auto.offsetY = (float) Math.sin(progreso * Math.PI) * 0.45f;
+            } else {
+                auto.offsetY = 0;
+            }
             
             misiones.actualizar(deltaTime, auto.posX, auto.posZ, auto.velocidad);
 
@@ -182,6 +203,23 @@ public class App {
             ciudad.dibujar(renderer, false); // <--- Vista principal con todos los detalles
             misiones.dibujarDestino(renderer, false);
             auto.dibujar(renderer);
+
+            // Efecto visual de humo cartoon ("POOF") al transformarse
+            if (tiempoEfectoAuto > 0) {
+                float progreso = 1.0f - (tiempoEfectoAuto / DURACION_EFECTO_AUTO);
+                float escalaHumo = (float) Math.sin(progreso * Math.PI); // Crece y se desvanece
+                renderer.entero("uEmision", 1); // Humo brillante estilo dibujo animado
+                for (int i = 0; i < 8; i++) {
+                    float ang = (float) (i * Math.PI / 4.0);
+                    float radioExpansion = 1.2f + (progreso * 1.6f);
+                    float hx = auto.posX + (float) Math.cos(ang) * radioExpansion;
+                    float hz = auto.posZ + (float) Math.sin(ang) * radioExpansion;
+                    float hy = 0.20f + (progreso * 0.5f);
+                    float tam = escalaHumo * 0.65f;
+                    renderer.cajaGirada(hx, hy, hz, tam, tam * 0.85f, tam, 0.98f, 0.96f, 0.92f, ang + progreso * 2f);
+                }
+                renderer.entero("uEmision", 0);
+            }
 
             // =========================================================
             // 6. DIBUJAR MINIMAPA (Ortográfica)
@@ -236,6 +274,34 @@ public class App {
             glfwSwapBuffers(ventana);
             glfwPollEvents();
         }
+    }
+
+    /**
+     * Alterna entre el Sedán Rosa de Homero y el Honor Roller (Auto Cohete) de Bart
+     * manteniendo intactas las coordenadas, orientación física y luces.
+     */
+    private void cambiarAuto() {
+        // Condición de seguridad: el vehículo debe estar detenido o casi detenido
+        if (Math.abs(auto.velocidad) > 1.5f) {
+            System.out.println("¡Debes frenar el auto para cambiar de vehículo!");
+            return;
+        }
+
+        // 1. Alternar al otro modelo
+        Auto nuevoAuto = (auto instanceof AutoCohete) ? new Auto() : new AutoCohete();
+
+        // 2. Transferir estado cinemático y visual
+        nuevoAuto.posX = auto.posX;
+        nuevoAuto.posZ = auto.posZ;
+        nuevoAuto.angulo = auto.angulo;
+        nuevoAuto.velocidad = 0; // Detenido en el sitio
+        nuevoAuto.anguloVolante = auto.anguloVolante;
+        nuevoAuto.farosOn = farosEncendidos;
+
+        // 3. Reemplazar la referencia activa y disparar efecto
+        this.auto = nuevoAuto;
+        this.tiempoEfectoAuto = DURACION_EFECTO_AUTO;
+        System.out.println("Vehículo cambiado a: " + (auto instanceof AutoCohete ? "Honor Roller (Cohete)" : "Sedán Rosa"));
     }
 
     public static void main(String[] args) {
