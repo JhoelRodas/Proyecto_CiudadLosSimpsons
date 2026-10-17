@@ -28,7 +28,7 @@ public class App {
         // Inicializamos los componentes DESPUÉS de GL.createCapabilities()
         renderer = new Renderer();
         ciudad = new Ciudad();
-        auto = new Auto();
+        auto = new AutoCohete();
         hud = new HUD();
 
         loop();

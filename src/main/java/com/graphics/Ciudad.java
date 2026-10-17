@@ -601,8 +601,9 @@ public class Ciudad {
         float[] esferaDelantera = { auto.posX + sen * distanciaEjes, auto.posZ + cos * distanciaEjes };
         empujarEsfera(auto, esferaDelantera, radioAuto);
 
-        // 2. Esfera TRASERA (Maletero). Usamos la nueva posX/Z en caso de que la
-        // delantera ya lo haya empujado
+        // 2. Esfera TRASERA (Maletero). Recalculamos sen/cos por si la delantera desvió el ángulo
+        sen = (float) Math.sin(auto.angulo);
+        cos = (float) Math.cos(auto.angulo);
         float[] esferaTrasera = { auto.posX - sen * distanciaEjes, auto.posZ - cos * distanciaEjes };
         empujarEsfera(auto, esferaTrasera, radioAuto);
     }
@@ -676,10 +677,23 @@ public class Ciudad {
             // impacto = 0.0f (Golpe rozando la pared en paralelo, de costado)
             float impacto = Math.abs(nx * dirAutoX + nz * dirAutoZ);
 
-            // Si roza, conserva el 98% de la velocidad. Si choca de frente, conserva solo
-            // el 10%
-            float conservacion = 0.98f - (0.88f * impacto);
+            // Si roza (impacto bajo), conserva prácticamente toda la velocidad (~99.7%).
+            // Usamos impacto^2 para que roces diagonales no maten la velocidad de inmediato,
+            // pero si choca de frente (impacto ~ 1) frene drásticamente.
+            float conservacion = Math.max(0.10f, 0.997f - (0.75f * impacto * impacto));
             auto.velocidad *= conservacion;
+
+            // 3. DESVÍO ANGULAR AUTOMÁTICO (Torque arcade para despegar el auto del muro)
+            float rx = esfera[0] - auto.posX;
+            float rz = esfera[1] - auto.posZ;
+            float torque = (pushX * rz - pushZ * rx);
+
+            if (Math.abs(auto.velocidad) > 0.5f) {
+                float desvio = torque * 0.35f;
+                // Limitamos a un máximo de ~4.5 grados (0.08 rad) por cuadro para que sea suave y estable
+                desvio = Math.max(-0.08f, Math.min(0.08f, desvio));
+                auto.angulo += desvio;
+            }
         }
     }
 }

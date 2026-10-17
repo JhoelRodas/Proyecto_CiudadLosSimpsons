@@ -57,6 +57,15 @@ public class VisorModelos {
             });
         }
 
+        AutoCohete cohete = new AutoCohete();
+        cohete.posX = 0f;
+        cohete.posZ = 0f;
+        registrar("Honor Roller", 14f, (r, ang) -> {
+            cohete.angulo = ang;
+            cohete.velocidad = 5.0f; // Para ver el fuego
+            cohete.dibujar(r);
+        });
+
         Auto auto = new Auto();
         auto.posX = 0f;
         auto.posZ = 0f;
